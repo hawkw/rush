@@ -1,14 +1,17 @@
+// extern crate combine;
+// extern crate combine_language;
 use std::{
     env,
     io::{self, Write},
-    path::{Path, PathBuf},
+    path::PathBuf,
     process::Command,
-    str::FromStr,
 };
 
 pub mod cmd;
-use cmd::Cmd;
+pub mod parse;
 
+use cmd::Cmd;
+use parse::ParseInto;
 
 #[derive(Clone, Debug)]
 pub struct Env {
@@ -29,19 +32,22 @@ impl Env {
         format!("{} $", self.pwd.display())
     }
 
-    pub fn next_command(&mut self) -> io::Result<&mut Self> {
+    pub fn next_command(&mut self) -> io::Result<()> {
         let mut line = String::new();
         print!("{}", self.prompt());
         io::stdout().flush()?;
         io::stdin().read_line(&mut line)?;
-        let cmd: Cmd = line.parse().unwrap();
+        self.history.push(line);
+        let cmd: Cmd = self.history.last()
+            .expect("last was just pushed")
+            .parse_into()
+            .unwrap();
         let result = Command::new(cmd.command)
             .args(cmd.args)
             .current_dir(&self.pwd)
             .status();
         println!("{:?}", result);
-        self.history.push(line);
-        Ok(self)
+        Ok(())
     }
 
     pub fn run_loop(&mut self) -> io::Result<()> {

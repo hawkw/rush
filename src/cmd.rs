@@ -1,16 +1,18 @@
 use std::{
-    // io,
-    // path::Path,
-    process::Command,
-    str::FromStr,
-    ffi::{OsStr, OsString},
-    rc::Rc,
+    iter,
+    str,
+    ffi::OsStr,
 };
 
+use ::parse::Parse;
+
 #[derive(Clone, Debug)]
-pub struct Cmd {
-    pub command: OsString,
-    pub args: Vec<OsString>,
+pub struct Cmd<'a> {
+    pub command: &'a OsStr,
+    pub args: iter::Map<
+        str::SplitWhitespace<'a>,
+        fn(&'a str) -> &'a OsStr
+    >,
 }
 
 #[derive(Clone, Debug)]
@@ -19,16 +21,16 @@ pub enum ParseCmdError {
     Other,
 }
 
-impl FromStr for Cmd {
-    type Err = ParseCmdError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts = s.trim().split_whitespace().map(|ref s| OsStr::new(s).to_os_string());
-        let command = parts.next().ok_or(ParseCmdError::NoInput)?;
-        let args = parts.collect::<Vec<_>>();
-        Ok(Cmd{
+impl<'a> Parse<'a> for Cmd<'a> {
+    type Error = ParseCmdError;
+    fn parse_from(s: &'a str) -> Result<Self, Self::Error> {
+        let mut args = s.trim().split_whitespace()
+            .map(OsStr::new as fn(&'a str) -> &'a OsStr);
+        let command = args.next().ok_or(ParseCmdError::NoInput)?;
+        let command = Cmd {
             command,
             args,
-        })
+        };
+        Ok(command)
     }
 }
-
