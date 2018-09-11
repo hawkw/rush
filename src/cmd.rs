@@ -1,6 +1,7 @@
 use std::{
     iter,
     str,
+    fmt,
     ffi::OsStr,
 };
 
@@ -32,5 +33,15 @@ impl<'a> Parse<'a> for Cmd<'a> {
             args,
         };
         Ok(command)
+    }
+}
+
+impl<'a> fmt::Display for Cmd<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.command.to_string_lossy())?;
+        for ref arg in self.args.clone() {
+            write!(f, " {}", arg.to_string_lossy())?;
+        }
+        Ok(())
     }
 }
